@@ -40,7 +40,6 @@ class CategorySpider(scrapy.Spider):
 
         model_text = response.css('p.product-brandModel__item::text').getall()[2]
         model_number = model_text.split(':')[-1].strip()
-
         style_attribute = response.css("div.pdp_image-carousel-image.js-zoomImage.c-pointer::attr(style)").get()
         start_index = style_attribute.find("url(") + 4
         end_index = style_attribute.find(")", start_index)
@@ -49,9 +48,13 @@ class CategorySpider(scrapy.Spider):
         product = EcommerceWebItem()
         product['name'] = response.css('h1.productDetail__descriptionTitle::text').get()
         product['price'] = response.css('span.price__number.gtm-price-number::text').get()
-        product['brand'] = response.css('a.product-brandModel__link::text').get()
-        product['color'] = response.xpath("//div[@class='tabsSpecification__table__row']/div[2]/text()").get()
-        product['description'] = ' '.join(response.css('div.tabContent__paragraph.tabsDescription__longDescription__inner p::text').getall())
+        brand = response.css('a.product-brandModel__link::text').get()
+        if brand:
+            product['brand'] = brand
+        color = response.xpath("//div[@class='tabsSpecification__table__row']/div[2]/text()").get()
+        if color:
+            product['color'] = color
+        product['description'] = response.css('div.tabContent__paragraph.tabsDescription__longDescription__inner p::text').getall()
         product['model_number'] = model_number
         product['image'] = url
         yield product
