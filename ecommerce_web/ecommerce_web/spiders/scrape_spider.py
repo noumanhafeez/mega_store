@@ -1,5 +1,6 @@
 import scrapy
 from ecommerce_web.items import EcommerceWebItem
+from scrapy.loader import ItemLoader
 
 class CategorySpider(scrapy.Spider):
     """
@@ -15,6 +16,7 @@ class CategorySpider(scrapy.Spider):
         """
 
         for link in response.css('a.mainNavigation__subLink.mainNavigation__subLink--l3::attr(href)'):
+            print(f"Category links{link}")
             full_link = response.urljoin(link.get())
             yield response.follow(url=full_link, callback=self.parse_product_page)
 
@@ -37,43 +39,16 @@ class CategorySpider(scrapy.Spider):
         """
             Extracts data from individual product pages and yields it as an item.
         """
-
-        # Extract the third item from the model text list (which is assumed to be in the format "Key: Value").
-        # Split the text by ':' and get the part after the last ':' as the model number.
-        model_text = response.css('p.product-brandModel__item::text').getall()[2]
-        model_number = model_text.split(':')[-1].strip()
-
-        # Extract the 'style' attribute value from the image element.
-        style_attribute_img = response.css("div.pdp_image-carousel-image.js-zoomImage.c-pointer::attr(style)").get()
-        # Extract the URL from the 'style' attribute value.
-        # The URL is enclosed in 'url()' which we need to locate and extract.
-        start_index = style_attribute_img.find("url(") + 4  # Find the start index of the URL within the 'url()' string
-        end_index = style_attribute_img.find(")", start_index)  # Find the end index of the URL
-        image_url = style_attribute_img[start_index:end_index]  # Extract the URL substring
-
         product = EcommerceWebItem()
         product['name'] = response.css('h1.productDetail__descriptionTitle::text').get()
+        product['original_price'] = response.css('span.price__number.price__number--strike-through.__number.__number--strike-through.gtm-price-num-strike-through::text').get()
         product['price'] = response.css('span.price__number.gtm-price-number::text').get()
-        brand = response.css('a.product-brandModel__link::text').get()
-        if brand:
-            product['brand'] = brand
-
-        specifications = {}
-        specs = response.css('div.tabsSpecification__table__row')
-        for spec in specs:
-            spec_key = spec.css('div.tabsSpecification__table__cell::text').get()
-            spec_value = spec.css('div.tabsSpecification__table__cell::text').getall()[1]
-            if spec_key and spec_value:  # Check if both spec_name and spec_value are not empty
-                specifications[spec_key] = spec_value
-        if specifications:
-            product['specifications'] = specifications
-
-        description = response.css('div.tabContent__paragraph.tabsDescription__longDescription__inner p::text').getall()
-        if description:
-            product['description'] = description
-
-        product['model_number'] = model_number
-        product['image'] = image_url
+        product['brand'] = response.css('a.product-brandModel__link::text').get()
+        product['specifications'] = response.css('div.tabsSpecification__table__row')
+        product['description'] = response.css(
+            'div.tabContent__paragraph.tabsDescription__longDescription__inner p::text').getall()
+        product['model_number'] = response.css('p.product-brandModel__item::text').getall()
+        product['image'] = response.css("div.pdp_image-carousel-image.js-zoomImage.c-pointer::attr(style)").get()
         product['product_url'] = response.css('link[rel="canonical"]::attr(href)').get()
         product['available_stock'] = response.css('input#pdpAddtoCartInput::attr(data-max)').get()
 
