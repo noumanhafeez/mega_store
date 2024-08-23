@@ -16,7 +16,6 @@ class CategorySpider(scrapy.Spider):
         """
 
         for link in response.css('a.mainNavigation__subLink.mainNavigation__subLink--l3::attr(href)'):
-            print(f"Category links{link}")
             full_link = response.urljoin(link.get())
             yield response.follow(url=full_link, callback=self.parse_product_page)
 
@@ -37,20 +36,20 @@ class CategorySpider(scrapy.Spider):
 
     def product_data(self, response):
         """
-            Extracts data from individual product pages and yields it as an item.
+            Parses the data from a specific size variant product page using ItemLoader.
         """
-        product = EcommerceWebItem()
-        product['name'] = response.css('h1.productDetail__descriptionTitle::text').get()
-        product['original_price'] = response.css(
-            'span.price__number.price__number--strike-through.__number.__number--strike-through.gtm-price-num-strike-through::text').get()
-        product['price'] = response.css('span.price__number.gtm-price-number::text').get()
-        product['brand'] = response.css('a.product-brandModel__link::text').get()
-        product['specifications'] = response.css('div.tabsSpecification__table__row')
-        product['description'] = response.css(
-            'div.tabContent__paragraph.tabsDescription__longDescription__inner p::text').getall()
-        product['model_number'] = response.css('p.product-brandModel__item::text').getall()
-        product['image'] = response.css("div.pdp_image-carousel-image.js-zoomImage.c-pointer::attr(style)").get()
-        product['product_url'] = response.css('link[rel="canonical"]::attr(href)').get()
-        product['available_stock'] = response.css('input#pdpAddtoCartInput::attr(data-max)').get()
 
-        yield product
+        loader = ItemLoader(item=EcommerceWebItem(), response=response)
+
+        loader.add_css('name', 'h1.productDetail__descriptionTitle::text')
+        loader.add_css('original_price', 'span.price__number.price__number--strike-through.__number.__number--strike-through.gtm-price-num-strike-through::text')
+        loader.add_css('price', 'span.price__number.gtm-price-number::text')
+        loader.add_css('brand', 'a.product-brandModel__link::text')
+        loader.add_css('specifications', 'div.tabsSpecification__table__row')
+        loader.add_css('description', 'div.tabContent__paragraph.tabsDescription__longDescription__inner p::text')
+        loader.add_css('model_number', 'p.product-brandModel__item::text')
+        loader.add_css('product_url', 'link[rel="canonical"]::attr(href)')
+        loader.add_css('image', "div.pdp_image-carousel-image.js-zoomImage.c-pointer::attr(style)")
+        loader.add_css('available_stock', 'input#pdpAddtoCartInput::attr(data-max)')
+
+        yield loader.load_item()
