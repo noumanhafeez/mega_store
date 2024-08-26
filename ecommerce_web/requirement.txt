@@ -1,2 +1,3 @@
 
 Scrapy 2.11.2
+Pymongo 4.8.0b0

@@ -6,23 +6,33 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-
+import pymongo
 
 class EcommerceWebPipeline:
+
+    def __init__(self):
+        self.conn = pymongo.MongoClient(
+            'localhost',
+            27017
+        )
+        db = self.conn['virginmegastore']
+        self.collection = db['data']
 
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
 
-        specifications = {}
-        specs = adapter.get('specifications')
-        if specs:
-            for spec in specs:
-                spec_key = spec.css('div.tabsSpecification__table__cell::text').get()
-                spec_value = spec.css('div.tabsSpecification__table__cell::text').getall()[1]
-                if spec_key and spec_value:
-                    specifications[spec_key] = spec_value
-        if not specifications:
-            adapter.pop('specifications', None)
+        convert_to_floats = ['price', 'available_stock', 'original_price']
+        for i in convert_to_floats:
+            value = adapter.get(i)
+            if value is not None:
+                # Remove any currency symbols and commas, then strip any leading/trailing whitespace
+                value = value.replace('SAR', '').replace(',', '').strip()
+                adapter[i] = float(value)
+
+        img_src = adapter.get('image')
+        if img_src:
+            full_image_url = 'https://www.virginmegastore.sa' + img_src
+            adapter['image'] = full_image_url
 
         brand = adapter.get('brand')
         if not brand:
@@ -36,6 +46,6 @@ class EcommerceWebPipeline:
         if not original_price:
             adapter.pop('original_price', None)
 
+        self.collection.insert_one(dict(item))
         return item
-
 
