@@ -14,7 +14,9 @@ class CategorySpider(scrapy.Spider):
         base_url = 'https://www.virginmegastore.sa'
 
         # Find all category links in the navigation
-        category_links = response.css('a.mainNavigation__subLink.mainNavigation__subLink--l3::attr(href)').getall()
+        category_links = response.css(
+            'a.mainNavigation__subLink.mainNavigation__subLink--l3::attr(href)'
+        ).getall()
 
         # Define a list of patterns or exact links to ignore
         ignore_patterns = ['/en/apple-shop', '/en/sale']
@@ -29,11 +31,16 @@ class CategorySpider(scrapy.Spider):
 
     def parse_product_page(self, response):
         """
-            Parses product listing pages to find individual product links and follows them.
+        Parses product listing pages to find individual product links and follows them.
         """
 
-        for item in response.css('li.product-list__item.g-elem.m2.md2.g-row--margin-x.product-item'):
-            product = item.css('li.product-list__item.g-elem.m2.md2.g-row--margin-x.product-item a::attr(href)').get()
+        for item in response.css(
+                'li.product-list__item.g-elem.m2.md2.g-row--margin-x.product-item'
+        ):
+            product = item.css(
+                'li.product-list__item.g-elem.m2.md2.g-row--margin-x.product-item '
+                'a::attr(href)'
+            ).get()
             full_product_link = f"https://www.virginmegastore.sa{product}"
             yield response.follow(url=full_product_link, callback=self.product_data)
 
@@ -45,25 +52,52 @@ class CategorySpider(scrapy.Spider):
 
     def product_data(self, response):
         """
-            Parses the data from a specific size variant product page using ItemLoader.
+        Parses the data from a specific size variant product page using ItemLoader.
         """
 
         loader = ItemLoader(item=EcommerceWebItem(), response=response)
 
-        loader.add_css('name', 'h1.productDetail__descriptionTitle::text')
-        loader.add_css('original_price', 'span.price__number.price__number--strike-through.__number.__number--strike-through.gtm-price-num-strike-through::text')
-        loader.add_css('price', 'span.price__number.gtm-price-number::text')
-        loader.add_css('brand', 'a.product-brandModel__link::text')
-        loader.add_css('description', 'div.tabContent__paragraph.tabsDescription__longDescription__inner p::text')
-        loader.add_css('product_url', 'link[rel="canonical"]::attr(href)')
-        loader.add_css('model_number', 'p.product-brandModel__item::text')
-        loader.add_css('specifications', 'div.tabsSpecification__table__cell::text')
-        loader.add_css('image', 'img.pdp-thumbs__image.w-100::attr(src)')
-        loader.add_css('available_stock', 'input#pdpAddtoCartInput::attr(data-max)')
+        loader.add_css(
+            'name', 'h1.productDetail__descriptionTitle::text'
+        )
+        loader.add_css(
+            'original_price',
+            'span.price__number.price__number--strike-through.__number'
+            '.__number--strike-through.gtm-price-num-strike-through::text'
+        )
+        loader.add_css(
+            'price', 'span.price__number.gtm-price-number::text'
+        )
+        loader.add_css(
+            'brand', 'a.product-brandModel__link::text'
+        )
+        loader.add_css(
+            'description',
+            'div.tabContent__paragraph.tabsDescription__longDescription__inner p::text'
+        )
+        loader.add_css(
+            'product_url', 'link[rel="canonical"]::attr(href)'
+        )
+        loader.add_css(
+            'model_number', 'p.product-brandModel__item::text'
+        )
+        loader.add_css(
+            'specifications', 'div.tabsSpecification__table__cell::text'
+        )
+        loader.add_css(
+            'image', 'img.pdp-thumbs__image.w-100::attr(src)'
+        )
+        loader.add_css(
+            'available_stock', 'input#pdpAddtoCartInput::attr(data-max)'
+        )
 
-        size_links = response.css('a.productDetail__variantItem::attr(href)').getall()
-        for size_link in size_links:
-            full_size_link = response.urljoin(size_link)
-            yield response.follow(full_size_link, callback=self.product_data)
+        # Sizes of shirt product
+        size_links = response.css(
+            'a.productDetail__variantItem::attr(href)'
+        ).getall()
+        if size_links:
+            for size_link in size_links:
+                full_size_link = response.urljoin(size_link)
+                yield response.follow(full_size_link, callback=self.product_data)
 
         yield loader.load_item()

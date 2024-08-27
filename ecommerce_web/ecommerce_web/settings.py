@@ -63,7 +63,8 @@ ROBOTSTXT_OBEY = True
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "ecommerce_web.pipelines.EcommerceWebPipeline": 300,
+    #"ecommerce_web.pipelines.EcommerceWebPipeline": 300,
+    "ecommerce_web.pipelines.EcommerceWebPipelineUsingPostSQL": 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
