@@ -1,25 +1,46 @@
-# Define here the models for your scraped items
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/items.html
-
 import scrapy
+from scrapy.loader.processors import MapCompose, TakeFirst, Join
+
+def clean_text(value):
+    return value.strip()
 
 
+def extract_model_number(value):
+    return value.split(':')[-1].strip()
 
 
 class EcommerceWebItem(scrapy.Item):
-    # define the fields for your item here like:
-    name = scrapy.Field()
-    price = scrapy.Field()
-    brand = scrapy.Field()
-    spec_name = scrapy.Field()
-    specifications = scrapy.Field()
-    product_url = scrapy.Field()
-    description = scrapy.Field()
-    model_number = scrapy.Field()
-    available_stock = scrapy.Field()
-    image = scrapy.Field()
-    original_price = scrapy.Field()
-
-
+    name = scrapy.Field(
+        input_processor=MapCompose(clean_text),
+        output_processor=TakeFirst()
+    )
+    price = scrapy.Field(
+        input_processor=MapCompose(clean_text),
+        output_processor=TakeFirst()
+    )
+    brand = scrapy.Field(
+        input_processor=MapCompose(clean_text),
+        output_processor=TakeFirst()
+    )
+    specifications = scrapy.Field(
+        input_processor=MapCompose(clean_text),
+        output_processor=Join()
+    )
+    product_url = scrapy.Field(output_processor=TakeFirst())
+    description = scrapy.Field(
+        input_processor=MapCompose(clean_text),
+        output_processor=Join()
+    )
+    model_number = scrapy.Field(
+        input_processor=MapCompose(clean_text, extract_model_number),
+        output_processor=TakeFirst()
+    )
+    available_stock = scrapy.Field(
+        input_processor=MapCompose(clean_text),
+        output_processor=TakeFirst()
+    )
+    image = scrapy.Field(output_processor=TakeFirst())
+    original_price = scrapy.Field(
+        input_processor=MapCompose(clean_text),
+        output_processor=TakeFirst()
+    )
